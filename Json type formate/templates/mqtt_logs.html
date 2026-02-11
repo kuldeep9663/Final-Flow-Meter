@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MQTT Logs – {{ imei }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+    --dark:#020617;
+    --main:#0f172a;
+    --accent:#38bdf8;
+    --success:#22c55e;
+}
+
+/* ===== GLOBAL ===== */
+body{
+    margin:0;
+    background:linear-gradient(135deg,#020617,#0f172a);
+    color:#e5e7eb;
+    font-family:Arial,sans-serif;
+    padding:20px;
+}
+
+h1{
+    color:var(--accent);
+    margin-bottom:6px;
+}
+.sub{
+    opacity:.8;
+    margin-bottom:20px;
+}
+
+/* ===== ACTIONS ===== */
+.actions{
+    display:flex;
+    gap:10px;
+    margin-bottom:15px;
+}
+.btn{
+    padding:8px 14px;
+    border-radius:8px;
+    border:none;
+    cursor:pointer;
+    font-weight:bold;
+    font-size:14px;
+    text-decoration:none;
+}
+.back{ background:#1e293b;color:var(--accent); }
+.refresh{ background:var(--success);color:#020617; }
+
+/* ===== TABLE ===== */
+.table-box{
+    background:#020617;
+    border-radius:12px;
+    box-shadow:0 0 14px #000;
+    overflow:hidden;
+}
+
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+
+thead{
+    background:#020617;
+}
+
+th,td{
+    padding:12px;
+    border-bottom:1px solid #1e293b;
+    text-align:left;
+    vertical-align:top;
+    font-size:14px;
+}
+
+th{
+    color:var(--accent);
+    font-size:13px;
+    text-transform:uppercase;
+}
+
+tbody tr:hover{
+    background:#0f172a;
+}
+
+/* ===== PAYLOAD ===== */
+pre{
+    margin:0;
+    background:#0f172a;
+    padding:10px;
+    border-radius:8px;
+    max-height:220px;
+    overflow:auto;
+    font-size:12px;
+}
+
+/* ===== EMPTY ===== */
+.empty{
+    text-align:center;
+    padding:30px;
+    opacity:.7;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📡 MQTT Send Logs</h1>
+<div class="sub">IMEI: <b>{{ imei }}</b></div>
+
+<div class="actions">
+    <a class="btn back" href="/mqtt-portal">⬅ Back to MQTT Portal</a>
+    <button class="btn refresh" onclick="loadLogs()">🔄 Refresh</button>
+</div>
+
+<div class="table-box">
+<table>
+<thead>
+<tr>
+    <th>Upload Time</th>
+    <th>Topic</th>
+    <th>Payload</th>
+</tr>
+</thead>
+<tbody id="rows">
+<tr><td colspan="3" class="empty">Loading MQTT logs…</td></tr>
+</tbody>
+</table>
+</div>
+
+<script>
+async function loadLogs(){
+    const tbody = document.getElementById("rows");
+    tbody.innerHTML = `<tr><td colspan="3" class="empty">Loading MQTT logs…</td></tr>`;
+
+    const res = await fetch("/api/mqtt-logs/{{ imei }}");
+    const logs = await res.json();
+
+    if(!logs.length){
+        tbody.innerHTML = `<tr><td colspan="3" class="empty">No MQTT logs found</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = "";
+    logs.reverse().forEach(l=>{
+        tbody.innerHTML += `
+        <tr>
+            <td>${l.upload_time || "-"}</td>
+            <td>${l.topic || "-"}</td>
+            <td><pre>${JSON.stringify(l.payload, null, 2)}</pre></td>
+        </tr>`;
+    });
+}
+
+loadLogs();
+</script>
+
+</body>
+</html>

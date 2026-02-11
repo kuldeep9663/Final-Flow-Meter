@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Modem Logs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{
+    margin:0;
+    background:#0f172a;
+    color:#e5e7eb;
+    font-family:Arial,sans-serif;
+}
+.header{
+    background:#020617;
+    padding:16px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+.header h2{
+    margin:0;
+    color:#38bdf8;
+}
+.back{
+    color:#38bdf8;
+    text-decoration:none;
+    font-weight:bold;
+}
+.main{
+    padding:20px;
+}
+.card{
+    background:#020617;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 0 10px #000;
+    overflow-x:auto;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+}
+th, td{
+    padding:10px;
+    border-bottom:1px solid #1e293b;
+    text-align:center;
+    white-space:nowrap;
+}
+th{ color:#38bdf8; }
+tr:hover{ background:#020617; }
+.empty{
+    text-align:center;
+    opacity:.7;
+}
+.small{
+    font-size:12px;
+    opacity:.8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+    <h2>📜 Modem Logs</h2>
+    <a class="back" href="/user-dashboard">⬅ Back</a>
+</div>
+
+<div class="main">
+<div class="card">
+
+<h3>IMEI: {{ imei }}</h3>
+
+{% if logs %}
+<table>
+<thead>
+<tr>
+    <th>Timestamp</th>
+    <th>Instant Flow</th>
+    <th>Cumulative</th>
+    <th>Positive</th>
+    <th>Negative</th>
+    <th>Pressure</th>
+    <th>Sampling</th>
+</tr>
+</thead>
+
+<tbody>
+{% for log in logs %}
+{% set d = log.decoded_measurements if log.decoded_measurements is defined else None %}
+
+<tr>
+    <td>{{ log.timestamp }}</td>
+
+    {% if d %}
+        {% set pos = (d.total_cumulative_whole or 0) + (d.total_cumulative_decimal or 0) %}
+        {% set neg = (d.negative_cumulative_whole or 0) + (d.negative_cumulative_decimal or 0) %}
+
+        <td>{{ d.transient_flow or 0 }}</td>
+        <td>{{ "%.3f"|format(pos - neg) }}</td>
+        <td>{{ "%.3f"|format(pos) }}</td>
+        <td>{{ "%.3f"|format(neg) }}</td>
+        <td>{{ d.pressure or 0 }}</td>
+        <td>{{ d.sampling_value or 0 }}</td>
+    {% else %}
+        <td colspan="6" class="small">Raw data (no decoded measurements)</td>
+    {% endif %}
+</tr>
+
+{% endfor %}
+</tbody>
+</table>
+{% else %}
+<p class="empty">No logs available for this modem.</p>
+{% endif %}
+
+</div>
+</div>
+
+</body>
+</html>

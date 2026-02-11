@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>All Modem Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+    --sidebar-width:200px;
+    --sidebar-collapsed:56px;
+    --dark:#020617;
+    --main:#0f172a;
+    --accent:#38bdf8;
+}
+
+/* ===== GLOBAL ===== */
+body{
+    margin:0;
+    background:var(--main);
+    color:#e5e7eb;
+    font-family:Arial,sans-serif;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+    position:fixed;
+    top:0;left:0;
+    width:var(--sidebar-width);
+    height:100vh;
+    background:var(--dark);
+    padding:16px 10px;
+    box-shadow:2px 0 12px #000;
+    transition:width .3s ease, transform .3s ease;
+    z-index:1000;
+}
+.sidebar.closed{ width:var(--sidebar-collapsed); }
+.sidebar.hidden{ transform:translateX(-100%); }
+
+.brand{
+    color:var(--accent);
+    text-align:center;
+    font-weight:bold;
+    margin-bottom:25px;
+}
+.sidebar.closed .brand{ display:none; }
+
+.menu a{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px;
+    border-radius:8px;
+    text-decoration:none;
+    font-weight:bold;
+    color:#e5e7eb;
+    margin-bottom:8px;
+}
+.menu a:hover{ background:#1e293b;color:var(--accent); }
+
+.icon{
+    width:22px;
+    text-align:center;
+    font-size:18px;
+}
+.sidebar.closed .menu span{ display:none; }
+.sidebar.closed .menu a{ justify-content:center; }
+
+/* ===== OVERLAY (mobile) ===== */
+.overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    display:none;
+    z-index:999;
+}
+
+/* ===== PAGE ===== */
+.page{
+    margin-left:var(--sidebar-width);
+    width:calc(100% - var(--sidebar-width));
+    padding:20px;
+    transition:margin-left .3s ease, width .3s ease;
+}
+body.collapsed .page{
+    margin-left:var(--sidebar-collapsed);
+    width:calc(100% - var(--sidebar-collapsed));
+}
+
+@media(max-width:768px){
+    .page{
+        margin-left:0;
+        width:100%;
+    }
+}
+
+/* ===== HEADER ===== */
+.header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:20px;
+}
+
+.toggle-btn{
+    background:#020617;
+    color:#38bdf8;
+    border:none;
+    font-size:22px;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+}
+
+h1{ color:#38bdf8 }
+
+/* ===== TABLE ===== */
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:#020617;
+}
+
+th,td{
+    padding:10px;
+    border-bottom:1px solid #1e293b;
+    text-align:center;
+}
+
+th{ color:#38bdf8 }
+
+a{
+    color:#22c55e;
+    text-decoration:none;
+}
+</style>
+</head>
+
+<body>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="brand">📡 NB-IoT</div>
+    <nav class="menu">
+        <a href="/admin_dashboard"><div class="icon">🏠</div><span>Dashboard</span></a>
+        <a href="/report"><div class="icon">📊</div><span>Report</span></a>
+        <a href="/sites"><div class="icon">🏭</div><span>Sites</span></a>
+        <a href="/mqtt-portal"><div class="icon">📡</div><span>MQTT Portal</span></a>
+        <a href="/user_management"><div class="icon">👥</div><span>User Management</span></a>
+        <a href="/add-device"><div class="icon">➕</div><span>Add Device</span></a>
+        <a href="/logout"><div class="icon">🚪</div><span>Logout</span></a>
+    </nav>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+
+    <div class="header">
+        <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+        <h1>📊 All Modem Report</h1>
+    </div>
+
+    <!-- TABLE -->
+    <table>
+        <thead>
+            <tr>
+                <th>IMEI</th>
+                <th>Status</th>
+                <th>Last Seen</th>
+                <th>Logs</th>
+            </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+    </table>
+
+</div>
+
+<script>
+/* ===== SIDEBAR LOGIC ===== */
+const sidebar=document.getElementById("sidebar");
+const overlay=document.getElementById("overlay");
+
+function toggleSidebar(){
+    const mobile=window.innerWidth<=768;
+    if(mobile){
+        sidebar.classList.toggle("hidden");
+        overlay.style.display=
+            sidebar.classList.contains("hidden")?"none":"block";
+    }else{
+        sidebar.classList.toggle("closed");
+        document.body.classList.toggle("collapsed");
+    }
+}
+
+if(window.innerWidth<=768){
+    sidebar.classList.add("hidden");
+}
+
+/* ===== LOAD MODEMS ===== */
+async function load(){
+    const res=await fetch("/api/modems");
+    const data=await res.json();
+    const tbody=document.getElementById("rows");
+    tbody.innerHTML="";
+
+    data.forEach(m=>{
+        tbody.innerHTML+=`
+        <tr>
+            <td>${m.imei}</td>
+            <td>${m.status}</td>
+            <td>${m.last_seen}</td>
+            <td><a href="/logs/${m.imei}">View Logs</a></td>
+        </tr>`;
+    });
+}
+load();
+</script>
+
+</body>
+</html>

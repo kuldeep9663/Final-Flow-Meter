@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Modem Logs</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<!-- Excel Export -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+<style>
+:root{
+    --sidebar-width:200px;
+    --sidebar-collapsed:56px;
+    --dark:#020617;
+    --main:#0f172a;
+    --accent:#38bdf8;
+}
+
+/* ===== GLOBAL ===== */
+body{
+    margin:0;
+    background:var(--main);
+    color:#e5e7eb;
+    font-family:Arial;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+    position:fixed;
+    top:0;
+    left:0;
+    width:var(--sidebar-width);
+    height:100vh;
+    background:var(--dark);
+    padding:16px 10px;
+    box-shadow:2px 0 12px #000;
+    transition:width .3s ease, transform .3s ease;
+    z-index:1000;
+}
+.sidebar.closed{
+    width:var(--sidebar-collapsed);
+}
+.sidebar.hidden{
+    transform:translateX(-100%);
+}
+
+/* ===== BRAND ===== */
+.brand{
+    color:var(--accent);
+    text-align:center;
+    font-weight:bold;
+    margin-bottom:25px;
+}
+.sidebar.closed .brand{
+    display:none;
+}
+
+/* ===== MENU ===== */
+.menu a{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px;
+    border-radius:8px;
+    text-decoration:none;
+    font-weight:bold;
+    color:#e5e7eb;
+    margin-bottom:8px;
+}
+.menu a:hover{
+    background:#1e293b;
+    color:var(--accent);
+}
+
+.icon{
+    width:22px;
+    text-align:center;
+    font-size:18px;
+}
+
+/* hide only text */
+.sidebar.closed .menu span{
+    display:none;
+}
+
+/* center icons when collapsed */
+.sidebar.closed .menu a{
+    justify-content:center;
+}
+
+/* ===== OVERLAY (mobile) ===== */
+.overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    display:none;
+    z-index:999;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main{
+    margin-left:var(--sidebar-width);
+    padding:20px;
+    transition:margin-left .3s ease;
+}
+body.collapsed .main{
+    margin-left:var(--sidebar-collapsed);
+}
+@media(max-width:768px){
+    .main{
+        margin-left:0;
+    }
+}
+
+/* ===== HEADER ===== */
+.header{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:20px;
+}
+.toggle-btn{
+    background:#020617;
+    color:#38bdf8;
+    border:none;
+    font-size:22px;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+}
+h1{ color:#38bdf8 }
+
+/* ===== FILTERS ===== */
+.filters,.time-filter{
+    display:flex;
+    gap:15px;
+    flex-wrap:wrap;
+    margin-bottom:15px;
+    align-items:center;
+}
+.time-filter input,.time-filter button{
+    background:#020617;
+    color:#e5e7eb;
+    border:1px solid #334155;
+    padding:6px 10px;
+    border-radius:6px;
+}
+.time-filter button:hover{
+    background:#1e293b;
+}
+.export-btn{
+    background:#22c55e;
+    color:#020617;
+    border:none;
+    padding:8px 14px;
+    border-radius:6px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+/* ===== CHART ===== */
+.chart-wrapper{
+    height:420px;
+    background:#020617;
+    padding:15px;
+    border-radius:10px;
+    margin-bottom:25px;
+}
+canvas{
+    width:100%!important;
+    height:100%!important;
+}
+
+/* ===== TABLE ===== */
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:#020617;
+}
+th,td{
+    padding:8px;
+    border-bottom:1px solid #1e293b;
+    text-align:center;
+}
+th{
+    color:#38bdf8;
+    position:sticky;
+    top:0;
+    background:#020617;
+}
+</style>
+</head>
+
+<body>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="brand">📡 NB-IoT</div>
+    <nav class="menu">
+        <a href="/admin_dashboard"><div class="icon">🏠</div><span>Dashboard</span></a>
+        <a href="/report"><div class="icon">📊</div><span>Report</span></a>
+        <a href="/sites"><div class="icon">🏭</div><span>Sites</span></a>
+        <a href="/mqtt-portal"><div class="icon">📡</div><span>MQTT Portal</span></a>
+        <a href="/user_management"><div class="icon">👥</div><span>User Management</span></a>
+        <a href="/add-device"><div class="icon">➕</div><span>Add Device</span></a>
+        <a href="/logout"><div class="icon">🚪</div><span>Logout</span></a>
+    </nav>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+    <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+    <div class="header">
+        <h1>📜 Logs for IMEI: {{ imei }}</h1>
+    </div>
+
+    <!-- TIME FILTER -->
+    <div class="time-filter">
+        <label>From</label>
+        <input type="datetime-local" id="fromTime">
+        <label>To</label>
+        <input type="datetime-local" id="toTime">
+        <button onclick="applyTimeFilter()">Apply</button>
+        <button onclick="clearTimeFilter()">Clear</button>
+        <button class="export-btn" onclick="exportExcel()">⬇ Export Excel</button>
+    </div>
+
+    <!-- VALUE FILTER -->
+    <div class="filters">
+        <label><input type="checkbox" checked data-ds="0"> Instant Flow</label>
+        <label><input type="checkbox" checked data-ds="1"> Cumulative Flow</label>
+        <label><input type="checkbox" checked data-ds="2"> Positive Flow</label>
+        <label><input type="checkbox" checked data-ds="3"> Negative Flow</label>
+        <label><input type="checkbox" checked data-ds="5"> Sampling</label>
+    </div>
+
+    <!-- CHART -->
+    <div class="chart-wrapper">
+        <canvas id="logChart"></canvas>
+    </div>
+
+    <!-- TABLE -->
+    <table>
+        <thead>
+            <tr>
+                <th>Timestamp</th>
+                <th>Instant Flow M3</th>
+                <th>Cumulative Flow M3</th>
+                <th>Positive Flow M3</th>
+                <th>Negative Flow M3</th>
+                <th>Sampling</th>
+            </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+    </table>
+</div>
+
+<script>
+/* ===== SIDEBAR LOGIC ===== */
+const sidebar = document.getElementById("sidebar");
+const overlay = document.getElementById("overlay");
+
+function toggleSidebar(){
+    const mobile = window.innerWidth <= 768;
+    if(mobile){
+        sidebar.classList.toggle("hidden");
+        overlay.style.display =
+            sidebar.classList.contains("hidden") ? "none" : "block";
+    }else{
+        sidebar.classList.toggle("closed");
+        document.body.classList.toggle("collapsed");
+    }
+}
+if(window.innerWidth <= 768){
+    sidebar.classList.add("hidden");
+}
+
+/* ===== DATA + CHART ===== */
+let chart, rawData=[], fromFilter=null, toFilter=null;
+const REFRESH_MS = 3000;
+
+async function fetchData(){
+    const res = await fetch("/api/logs/{{ imei }}");
+    rawData = await res.json();
+    render();
+}
+
+function applyTimeFilter(){
+    fromFilter = fromTime.value ? new Date(fromTime.value) : null;
+    toFilter   = toTime.value   ? new Date(toTime.value)   : null;
+    render();
+}
+function clearTimeFilter(){
+    fromFilter = null;
+    toFilter = null;
+    fromTime.value="";
+    toTime.value="";
+    render();
+}
+
+function render(){
+    const labels=[],inst=[],cum=[],pos=[],neg=[],pres=[],samp=[];
+    rows.innerHTML="";
+
+    rawData.forEach(r=>{
+        const t = new Date(r.timestamp.replace(" ","T"));
+        if(fromFilter && t < fromFilter) return;
+        if(toFilter && t > toFilter) return;
+
+        const d = r.decoded_measurements;
+        if(!d) return;
+
+        const positive=(d.total_cumulative_whole||0)+(d.total_cumulative_decimal||0);
+        const negative=(d.negative_cumulative_whole||0)+(d.negative_cumulative_decimal||0);
+
+        labels.push(r.timestamp);
+        inst.push(d.transient_flow||0);
+        cum.push(positive-negative);
+        pos.push(positive);
+        neg.push(negative);
+        
+        samp.push(d.sampling_value||0);
+
+        rows.innerHTML += `
+        <tr>
+            <td>${r.timestamp}</td>
+            <td>${d.transient_flow??0}</td>
+            <td>${(positive-negative).toFixed(3)}</td>
+            <td>${positive.toFixed(3)}</td>
+            <td>${negative.toFixed(3)}</td>
+           
+            <td>${d.sampling_value??0}</td>
+        </tr>`;
+    });
+
+    if(!chart){
+        chart = new Chart(logChart,{
+            type:"line",
+            data:{labels,datasets:[
+                {label:"Instant Flow",data:inst},
+                {label:"Cumulative Flow",data:cum},
+                {label:"Positive Flow",data:pos},
+                {label:"Negative Flow",data:neg},
+                {label:"Sampling",data:samp}
+            ]},
+            options:{responsive:true,maintainAspectRatio:false}
+        });
+
+        document.querySelectorAll(".filters input").forEach(cb=>{
+            cb.onchange=()=>{
+                chart.getDatasetMeta(cb.dataset.ds).hidden=!cb.checked;
+                chart.update();
+            };
+        });
+    }else{
+        chart.data.labels = labels;
+        chart.data.datasets[0].data = inst;
+        chart.data.datasets[1].data = cum;
+        chart.data.datasets[2].data = pos;
+        chart.data.datasets[3].data = neg;
+        chart.data.datasets[4].data = samp;
+        chart.update();
+    }
+}
+
+function exportExcel(){
+    const out=[];
+    rawData.forEach(r=>{
+        const t=new Date(r.timestamp.replace(" ","T"));
+        if(fromFilter && t<fromFilter) return;
+        if(toFilter && t>toFilter) return;
+
+        const d=r.decoded_measurements;
+        if(!d) return;
+
+        const pos=(d.total_cumulative_whole||0)+(d.total_cumulative_decimal||0);
+        const neg=(d.negative_cumulative_whole||0)+(d.negative_cumulative_decimal||0);
+
+        out.push({
+            Timestamp:r.timestamp,
+            "Instant Flow":d.transient_flow??0,
+            "Cumulative Flow":(pos-neg).toFixed(3),
+            "Positive Flow":pos.toFixed(3),
+            "Negative Flow":neg.toFixed(3),
+            "Sampling Value":d.sampling_value??0
+        });
+    });
+
+    if(!out.length){ alert("No data"); return; }
+
+    const ws = XLSX.utils.json_to_sheet(out);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Logs");
+    XLSX.writeFile(wb, `IMEI_{{ imei }}_Logs.xlsx`);
+}
+
+fetchData();
+setInterval(fetchData, REFRESH_MS);
+</script>
+
+</body>
+</html>

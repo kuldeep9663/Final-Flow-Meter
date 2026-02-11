@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>User Site Status</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{
+    margin:0;
+    background:#0f172a;
+    color:#e5e7eb;
+    font-family:Arial,sans-serif;
+    padding:20px;
+}
+h2{ color:#38bdf8; }
+.card{
+    background:#020617;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 0 10px #000;
+    margin-bottom:20px;
+}
+table{
+    width:100%;
+    border-collapse:collapse;
+}
+th, td{
+    padding:12px;
+    border-bottom:1px solid #1e293b;
+    text-align:left;
+}
+th{ color:#38bdf8; }
+.online{
+    color:#22c55e;
+    font-weight:bold;
+}
+.offline{
+    color:#ef4444;
+    font-weight:bold;
+}
+a{
+    color:#38bdf8;
+    text-decoration:none;
+    font-weight:bold;
+}
+.back{
+    display:inline-block;
+    margin-bottom:15px;
+}
+</style>
+</head>
+
+<body>
+
+<a class="back" href="/user_management">⬅ Back to User Management</a>
+
+<h2>👤 User: {{ username }}</h2>
+
+{% if user_sites %}
+    {% for site, modems in user_sites.items() %}
+    <div class="card">
+        <h3>🏭 {{ site }}</h3>
+
+        <table>
+            <tr>
+                <th>IMEI</th>
+                <th>Status</th>
+                <th>Last Seen</th>
+            </tr>
+
+            {% for m in modems %}
+            <tr>
+                <td>{{ m.imei }}</td>
+                <td class="{{ 'online' if m.status == 'ONLINE' else 'offline' }}">
+                    {{ m.status }}
+                </td>
+                <td>{{ m.last_seen or '—' }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endfor %}
+{% else %}
+    <p>No sites or modems assigned to this user.</p>
+{% endif %}
+
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Aarohi Login</title>
+
+<style>
+body{
+  background:#0f172a;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  height:100vh;
+  font-family:Arial, sans-serif;
+}
+
+.card{
+  background:#020617;
+  padding:30px;
+  border-radius:12px;
+  width:340px;
+  text-align:center;
+  color:#e5e7eb;
+  box-shadow:0 20px 40px rgba(0,0,0,.4);
+}
+
+.logo{
+  width:180px;
+  margin-bottom:20px;
+}
+
+input, button{
+  width:100%;
+  padding:12px;
+  margin:8px 0;
+  border-radius:6px;
+  border:none;
+  font-size:14px;
+}
+
+input{
+  background:#0f172a;
+  color:#e5e7eb;
+}
+
+input::placeholder{
+  color:#94a3b8;
+}
+
+button{
+  background:#22c55e;
+  font-weight:bold;
+  cursor:pointer;
+}
+
+button:hover{
+  background:#16a34a;
+}
+
+.error{
+  color:#f87171;
+  margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<form class="card" method="POST">
+  <!-- ✅ Correct Flask static path -->
+  <img class="logo" src="{{ url_for('static', filename='Aarohi_logo.png') }}" alt="Aarohi Logo">
+
+  <input name="username" placeholder="Username" required autocomplete="username">
+  <input type="password" name="password" placeholder="Password" required autocomplete="current-password">
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <button type="submit">Login</button>
+</form>
+
+</body>
+</html>

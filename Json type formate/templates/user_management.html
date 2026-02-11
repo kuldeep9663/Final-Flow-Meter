@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>User Management</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+    --sidebar-width:250px;
+    --dark:#020617;
+    --main:#0f172a;
+    --accent:#38bdf8;
+}
+*{ box-sizing:border-box; }
+body{
+    margin:0;
+    background:var(--main);
+    color:#e5e7eb;
+    font-family:Arial,sans-serif;
+    margin-left:var(--sidebar-width);
+}
+.sidebar{
+    position:fixed;
+    top:0; left:0;
+    width:var(--sidebar-width);
+    height:100vh;
+    background:var(--dark);
+    padding:20px 14px;
+}
+.brand{
+    font-size:20px;
+    font-weight:bold;
+    color:var(--accent);
+    margin-bottom:25px;
+    text-align:center;
+}
+.menu a{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px;
+    color:#e5e7eb;
+    text-decoration:none;
+    border-radius:8px;
+    margin-bottom:6px;
+}
+.menu a:hover{
+    background:#1e293b;
+    color:var(--accent);
+}
+.icon{ font-size:18px; width:24px; text-align:center; }
+.main{ padding:20px; }
+h1{ color:var(--accent); }
+.card{
+    background:#020617;
+    padding:20px;
+    border-radius:12px;
+    box-shadow:0 0 10px #000;
+    margin-bottom:20px;
+}
+label{ font-size:14px; color:#94a3b8; }
+input, select{
+    width:100%;
+    padding:10px;
+    margin:6px 0 14px;
+    border-radius:8px;
+    border:none;
+    background:#0f172a;
+    color:#e5e7eb;
+}
+button{
+    background:var(--accent);
+    border:none;
+    padding:12px;
+    border-radius:8px;
+    font-weight:bold;
+    cursor:pointer;
+    width:100%;
+}
+table{ width:100%; border-collapse:collapse; }
+th, td{
+    padding:12px;
+    border-bottom:1px solid #1e293b;
+    text-align:left;
+}
+th{ color:var(--accent); }
+.view-btn{
+    background:#38bdf8;
+    color:#020617;
+    padding:6px 12px;
+    border-radius:6px;
+    text-decoration:none;
+    font-weight:bold;
+    display:inline-block;
+}
+.view-btn:hover{
+    opacity:0.9;
+}
+</style>
+</head>
+
+<body>
+
+<!-- ===== SIDEBAR ===== -->
+<div class="sidebar">
+    <div class="brand">📡 NB-IoT</div>
+    <div class="menu">
+        <a href="/admin_dashboard"><div class="icon">🏠</div><span>Dashboard</span></a>
+        <a href="/report"><div class="icon">📊</div><span>Report</span></a>
+        <a href="/sites"><div class="icon">🏭</div><span>Sites</span></a>
+        <a href="/mqtt-portal"><div class="icon">📡</div><span>MQTT Portal</span></a>
+        <a href="/user_management"><div class="icon">👥</div><span>User Management</span></a>
+        <a href="/logout"><div class="icon">🚪</div><span>Logout</span></a>
+    </div>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+<h1>👥 User Management</h1>
+
+<!-- ===== CREATE USER ===== -->
+<div class="card">
+<h3>Create New User</h3>
+
+<form method="POST">
+    <label>Username</label>
+    <input name="username" required>
+
+    <label>Password</label>
+    <input name="password" required>
+
+    <label>Assign Sites</label>
+    <select name="sites" multiple required>
+        {% for site in sites %}
+        <option value="{{ site }}">{{ site }}</option>
+        {% endfor %}
+    </select>
+
+    <button>Create User</button>
+</form>
+</div>
+
+<!-- ===== USER LIST ===== -->
+<div class="card">
+<h3>Existing Users</h3>
+
+<table>
+<tr>
+    <th>Username</th>
+    <th>Assigned Sites</th>
+    <th>Action</th>
+</tr>
+
+{% for username, data in users.items() %}
+<tr>
+    <td>{{ username }}</td>
+    <td>
+        {% if data.sites %}
+            {{ data.sites | join(", ") }}
+        {% else %}
+            —
+        {% endif %}
+    </td>
+    <td>
+        <a class="view-btn" href="/user-sites/{{ username }}">
+            View
+        </a>
+    </td>
+</tr>
+{% endfor %}
+</table>
+</div>
+
+</div>
+</body>
+</html>

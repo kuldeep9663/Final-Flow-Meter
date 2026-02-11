@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>User Modem Report</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+    --sidebar-width:200px;
+    --sidebar-collapsed:56px;
+    --dark:#020617;
+    --main:#0f172a;
+    --accent:#38bdf8;
+}
+body{
+    margin:0;
+    background:var(--main);
+    color:#e5e7eb;
+    font-family:Arial,sans-serif;
+}
+.sidebar{
+    position:fixed;
+    top:0;left:0;
+    width:var(--sidebar-width);
+    height:100vh;
+    background:var(--dark);
+    padding:16px 10px;
+}
+.brand{
+    color:var(--accent);
+    text-align:center;
+    font-weight:bold;
+    margin-bottom:25px;
+}
+.menu a{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px;
+    border-radius:8px;
+    text-decoration:none;
+    font-weight:bold;
+    color:#e5e7eb;
+    margin-bottom:8px;
+}
+.menu a:hover{ background:#1e293b;color:var(--accent); }
+
+.page{
+    margin-left:var(--sidebar-width);
+    padding:20px;
+}
+h1{ color:var(--accent); }
+
+table{
+    width:100%;
+    border-collapse:collapse;
+    background:#020617;
+}
+th,td{
+    padding:10px;
+    border-bottom:1px solid #1e293b;
+    text-align:center;
+}
+th{ color:#38bdf8 }
+a{
+    color:#22c55e;
+    text-decoration:none;
+    font-weight:bold;
+}
+.online{ color:#22c55e }
+.offline{ color:#ef4444 }
+</style>
+</head>
+
+<body>
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+    <div class="brand">📡 NB-IoT</div>
+    <div class="menu">
+        <a href="/user-dashboard">🏠 Dashboard</a>
+        <a href="/user-report">📊 Report</a>
+        <a href="/logout">🚪 Logout</a>
+    </div>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+    <h1>📊 My Modem Report</h1>
+
+    <table>
+        <thead>
+            <tr>
+                <th>IMEI</th>
+                <th>Status</th>
+                <th>Last Seen</th>
+                <th>Logs</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% if rows %}
+            {% for r in rows %}
+            <tr>
+                <td>{{ r.imei }}</td>
+                <td class="{{ 'online' if r.status=='ONLINE' else 'offline' }}">
+                    {{ r.status }}
+                </td>
+                <td>{{ r.last_seen or "—" }}</td>
+                <td>
+                    <a href="/user-logs/{{ r.imei }}">View Logs</a>
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr><td colspan="4">No modems assigned</td></tr>
+        {% endif %}
+        </tbody>
+    </table>
+</div>
+
+</body>
+</html>

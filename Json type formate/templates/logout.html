@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head><title>Logs</title></head>
+<body>
+
+{% include "sidebar.html" %}
+<h2>Logs for {{ imei }}</h2>
+
+<table border="1">
+<tr><th>Time</th><th>Data</th></tr>
+<tbody id="rows"></tbody>
+</table>
+
+<script>
+fetch("/api/logs/{{ imei }}")
+.then(r=>r.json())
+.then(d=>{
+  const t=document.getElementById("rows");
+  d.forEach(x=>{
+    t.innerHTML+=`<tr><td>${x.timestamp}</td><td>${JSON.stringify(x.decoded_measurements||{})}</td></tr>`;
+  });
+});
+</script>
+
+</body>
+</html>

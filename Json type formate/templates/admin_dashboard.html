@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Modem Status Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+    --sidebar-width:250px;
+    --sidebar-collapsed:72px;
+    --dark:#020617;
+    --main:#0f172a;
+    --accent:#38bdf8;
+}
+
+/* ===== GLOBAL ===== */
+body{
+    margin:0;
+    background:var(--main);
+    color:#e5e7eb;
+    font-family:Arial,sans-serif;
+    margin-left:var(--sidebar-width);
+    transition:margin-left .3s ease;
+}
+body.collapsed{ margin-left:var(--sidebar-collapsed); }
+@media(max-width:768px){ body{ margin-left:0; } }
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+    position:fixed;
+    top:0;left:0;
+    width:var(--sidebar-width);
+    height:100vh;
+    background:var(--dark);
+    padding:20px 14px;
+    box-shadow:2px 0 20px rgba(0,0,0,.6);
+    display:flex;
+    flex-direction:column;
+    transition:all .3s ease;
+    z-index:1000;
+}
+.sidebar.collapsed{ width:var(--sidebar-collapsed); }
+.sidebar.hidden{ transform:translateX(-100%); }
+
+/* ===== BRAND ===== */
+.brand{
+    color:var(--accent);
+    font-size:20px;
+    font-weight:bold;
+    text-align:center;
+    margin-bottom:30px;
+}
+.sidebar.collapsed .brand{ display:none; }
+
+/* ===== MENU ===== */
+.menu{ display:flex; flex-direction:column; gap:6px; }
+.menu a{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:12px 14px;
+    border-radius:10px;
+    text-decoration:none;
+    color:#e5e7eb;
+    font-weight:600;
+}
+.menu a:hover{ background:#1e293b; color:var(--accent); }
+.icon{ width:22px; text-align:center; }
+.sidebar.collapsed span{ display:none; }
+
+/* ===== OVERLAY ===== */
+.overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    display:none;
+    z-index:999;
+}
+
+/* ===== MAIN ===== */
+.main{ padding:20px; }
+
+/* ===== HEADER ===== */
+.header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:10px;
+    margin-bottom:20px;
+}
+.toggle-btn{
+    background:#020617;
+    color:#38bdf8;
+    border:none;
+    font-size:22px;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+}
+h1{ margin:0;font-size:22px;color:#38bdf8; }
+
+/* ===== USER ===== */
+.user-box{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    background:#020617;
+    padding:8px 14px;
+    border-radius:10px;
+}
+.user-box span{ color:#38bdf8;font-weight:bold; }
+.logout{
+    background:#ef4444;
+    color:#fff;
+    padding:6px 12px;
+    border-radius:6px;
+    text-decoration:none;
+    font-size:14px;
+    font-weight:bold;
+}
+
+/* ===== SUMMARY ===== */
+.summary{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+    gap:16px;
+    margin-bottom:25px;
+}
+.summary-card{
+    background:#020617;
+    padding:16px;
+    border-radius:12px;
+    text-align:center;
+    box-shadow:0 0 10px #000;
+}
+.total{color:#38bdf8}
+.online{color:#22c55e}
+.offline{color:#ef4444}
+
+/* ===== GRID ===== */
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    gap:16px;
+}
+.card{
+    background:#020617;
+    border-radius:12px;
+    padding:16px;
+    box-shadow:0 0 12px #000;
+    transition:transform .2s;
+}
+.card:hover{ transform:translateY(-4px); }
+.imei{ color:#38bdf8;font-size:18px;font-weight:bold;margin-bottom:8px; }
+.status{ display:flex;align-items:center;gap:10px;margin:10px 0; }
+.dot{ width:14px;height:14px;border-radius:50%; }
+.dot.online{ background:#22c55e; }
+.dot.offline{ background:#ef4444; }
+.last{ font-size:13px;opacity:.7; }
+.actions{ display:flex;gap:10px;margin-top:12px; }
+.btn{ flex:1;padding:8px;border-radius:8px;text-decoration:none;font-weight:bold;font-size:14px;text-align:center; }
+.report{ background:#1e293b;color:#38bdf8; }
+.logs{ background:#22c55e;color:#020617; }
+</style>
+</head>
+
+<body>
+
+<!-- ===== OVERLAY ===== -->
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<div class="sidebar" id="sidebar">
+    <div class="brand">📡 NB-IoT</div>
+    <nav class="menu">
+        <a href="/admin_dashboard"><div class="icon">🏠</div><span>Dashboard</span></a>
+        <a href="/report"><div class="icon">📊</div><span>Report</span></a>
+        <a href="/sites"><div class="icon">🏭</div><span>Sites</span></a>
+        <a href="/mqtt-portal"><div class="icon">📡</div><span>MQTT Portal</span></a>
+        <a href="/user_management"><div class="icon">👥</div><span>User Management</span></a>
+        <a href="/add-device"><div class="icon">➕</div><span>Add Device</span></a>
+        <a href="/logout"><div class="icon">🚪</div><span>Logout</span></a>
+    </nav>
+</div>
+
+<!-- ===== MAIN ===== -->
+<div class="main">
+    <button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+    <div class="header">
+        <h1>📡 Modem Status Dashboard</h1>
+        <div class="user-box">
+            <span>👤 {{ session.username }}</span>
+            <a class="logout" href="/logout">Logout</a>
+        </div>
+    </div>
+
+    <div class="summary">
+        <div class="summary-card"><h2 id="total" class="total">0</h2><p>Total Modems</p></div>
+        <div class="summary-card"><h2 id="online" class="online">0</h2><p>Online Modems</p></div>
+        <div class="summary-card"><h2 id="offline" class="offline">0</h2><p>Offline Modems</p></div>
+    </div>
+
+    <div class="grid" id="grid">Loading...</div>
+</div>
+
+<script>
+const sidebar=document.getElementById("sidebar");
+const overlay=document.getElementById("overlay");
+
+function toggleSidebar(){
+    const mobile=window.innerWidth<=768;
+    if(mobile){
+        sidebar.classList.toggle("hidden");
+        overlay.style.display=sidebar.classList.contains("hidden")?"none":"block";
+    }else{
+        sidebar.classList.toggle("collapsed");
+        document.body.classList.toggle("collapsed");
+    }
+}
+
+/* INIT */
+if(window.innerWidth<=768){ sidebar.classList.add("hidden"); }
+
+/* DATA */
+async function loadModems(){
+    const res=await fetch("/api/modems");
+    const data=await res.json();
+    const grid=document.getElementById("grid");
+    let on=0,off=0;
+    grid.innerHTML="";
+    data.forEach(m=>{
+        m.status==="ONLINE"?on++:off++;
+        grid.innerHTML+=`
+        <div class="card">
+            <div class="imei">${m.imei}</div>
+            <div class="status">
+                <div class="dot ${m.status==="ONLINE"?"online":"offline"}"></div>
+                ${m.status}
+            </div>
+            <div class="last">Last Seen:<br>${m.last_seen}</div>
+            <div class="actions">
+                <a class="btn report" href="/report">📊 Report</a>
+                <a class="btn logs" href="/logs/${m.imei}">📜 Logs</a>
+            </div>
+        </div>`;
+    });
+    total.textContent=data.length;
+    online.textContent=on;
+    offline.textContent=off;
+}
+setInterval(loadModems,3000);
+loadModems();
+</script>
+
+</body>
+</html>

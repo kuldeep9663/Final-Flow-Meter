@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MQTT Portal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+:root{
+    --sidebar-width:200px;
+    --sidebar-collapsed:56px;
+    --dark:#020617;
+    --main:#0f172a;
+    --accent:#38bdf8;
+    --success:#22c55e;
+}
+
+/* ===== GLOBAL ===== */
+body{
+    margin:0;
+    background:linear-gradient(135deg,#020617,#0f172a);
+    color:#e5e7eb;
+    font-family:Arial,sans-serif;
+}
+
+/* ===== SIDEBAR ===== */
+.sidebar{
+    position:fixed;
+    top:0;
+    left:0;
+    width:var(--sidebar-width);
+    height:100vh;
+    background:var(--dark);
+    padding:16px 10px;
+    box-shadow:2px 0 12px #000;
+    transition:width .3s ease, transform .3s ease;
+    z-index:1000;
+}
+.sidebar.closed{ width:var(--sidebar-collapsed); }
+.sidebar.hidden{ transform:translateX(-100%); }
+
+.brand{
+    color:var(--accent);
+    text-align:center;
+    font-weight:bold;
+    margin-bottom:25px;
+}
+.sidebar.closed .brand{ display:none; }
+
+.menu a{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px;
+    border-radius:8px;
+    text-decoration:none;
+    font-weight:bold;
+    color:#e5e7eb;
+    margin-bottom:8px;
+}
+.menu a:hover{ background:#1e293b;color:var(--accent); }
+.icon{ width:22px;text-align:center;font-size:18px; }
+.sidebar.closed .menu span{ display:none; }
+.sidebar.closed .menu a{ justify-content:center; }
+
+/* ===== OVERLAY ===== */
+.overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.6);
+    display:none;
+    z-index:999;
+}
+
+/* ===== PAGE ===== */
+.page{
+    margin-left:var(--sidebar-width);
+    width:calc(100% - var(--sidebar-width));
+    padding:20px;
+}
+body.collapsed .page{
+    margin-left:var(--sidebar-collapsed);
+    width:calc(100% - var(--sidebar-collapsed));
+}
+@media(max-width:768px){
+    .page{ margin-left:0;width:100%; }
+}
+
+/* ===== UI ===== */
+.toggle-btn{
+    background:#020617;
+    color:#38bdf8;
+    border:none;
+    font-size:22px;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    margin-bottom:20px;
+}
+h1{ color:#38bdf8; }
+.section-title{ margin:25px 0 10px;color:#38bdf8; }
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+    gap:16px;
+}
+
+/* ===== ADD MODEM CARD ===== */
+.card{
+    background:#020617;
+    border-radius:12px;
+    padding:16px;
+    box-shadow:0 0 12px #000;
+}
+.imei{
+    font-size:18px;
+    font-weight:bold;
+    color:#38bdf8;
+    margin-bottom:10px;
+}
+input{
+    width:100%;
+    padding:10px;
+    border-radius:8px;
+    border:none;
+    background:#0f172a;
+    color:#e5e7eb;
+}
+
+/* ===== SAVED MODEM CARD ===== */
+.saved-card{
+    background:#020617;
+    border-radius:14px;
+    padding:16px;
+    box-shadow:0 0 14px #000;
+    border-left:4px solid var(--success);
+}
+
+.saved-header{
+    font-size:17px;
+    font-weight:bold;
+    color:#38bdf8;
+    margin-bottom:6px;
+}
+
+.saved-row{
+    font-size:14px;
+    opacity:.9;
+    margin:4px 0;
+}
+
+.saved-actions{
+    display:flex;
+    gap:10px;
+    margin-top:12px;
+}
+
+.btn{
+    flex:1;
+    padding:8px;
+    border-radius:8px;
+    text-align:center;
+    text-decoration:none;
+    font-weight:bold;
+    font-size:14px;
+}
+
+.logs{
+    background:var(--success);
+    color:#020617;
+}
+
+.time{
+    background:#1e293b;
+    color:#38bdf8;
+}
+</style>
+</head>
+
+<body>
+
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="brand">📡 NB-IoT</div>
+    <nav class="menu">
+        <a href="/admin_dashboard"><div class="icon">🏠</div><span>Dashboard</span></a>
+        <a href="/report"><div class="icon">📊</div><span>Report</span></a>
+        <a href="/sites"><div class="icon">🏭</div><span>Sites</span></a>
+        <a href="/mqtt-portal"><div class="icon">📡</div><span>MQTT Portal</span></a>
+        <a href="/user_management"><div class="icon">👥</div><span>User Management</span></a>
+        <a href="/add-device"><div class="icon">➕</div><span>Add Device</span></a>
+        <a href="/logout"><div class="icon">🚪</div><span>Logout</span></a>
+    </nav>
+</div>
+
+<!-- PAGE -->
+<div class="page">
+<button class="toggle-btn" onclick="toggleSidebar()">☰</button>
+
+<h1>📡 MQTT Portal</h1>
+
+<h3 class="section-title">➕ Add Modems</h3>
+<div class="grid" id="unsavedGrid">Loading…</div>
+
+<br>
+<button class="toggle-btn" onclick="saveMapping()">💾 Submit</button>
+
+<h3 class="section-title">✅ Saved Modems</h3>
+<div class="grid" id="savedGrid"></div>
+</div>
+
+<script>
+const sidebar=document.getElementById("sidebar");
+const overlay=document.getElementById("overlay");
+
+function toggleSidebar(){
+    const mobile=window.innerWidth<=768;
+    if(mobile){
+        sidebar.classList.toggle("hidden");
+        overlay.style.display=sidebar.classList.contains("hidden")?"none":"block";
+    }else{
+        sidebar.classList.toggle("closed");
+        document.body.classList.toggle("collapsed");
+    }
+}
+if(window.innerWidth<=768){ sidebar.classList.add("hidden"); }
+
+let CURRENT_MAP = {};
+let LAST_SENT = {};
+
+async function loadPortal(){
+    const res = await fetch("/api/mqtt-portal");
+    const data = await res.json();
+
+    CURRENT_MAP = data.mapping || {};
+    LAST_SENT = data.last_sent || {};
+
+    const unsaved = data.imeis.filter(i => !CURRENT_MAP[i]);
+
+    const unsavedGrid=document.getElementById("unsavedGrid");
+    const savedGrid=document.getElementById("savedGrid");
+
+    unsavedGrid.innerHTML="";
+    savedGrid.innerHTML="";
+
+    if(!unsaved.length){
+        unsavedGrid.innerHTML="<p>All modems mapped ✅</p>";
+    }
+
+    unsaved.forEach(imei=>{
+        unsavedGrid.innerHTML+=`
+        <div class="card">
+            <div class="imei">${imei}</div>
+            <input data-imei="${imei}" placeholder="Enter MQTT Topic">
+        </div>`;
+    });
+
+    Object.keys(CURRENT_MAP).forEach(imei=>{
+        savedGrid.innerHTML+=`
+        <div class="saved-card">
+            <div class="saved-header">${imei}</div>
+            <div class="saved-row"><b>Topic:</b> ${CURRENT_MAP[imei]}</div>
+            <div class="saved-row"><b>Last MQTT:</b> ${LAST_SENT[imei] || "Never"}</div>
+
+            <div class="saved-actions">
+                <a class="btn logs" href="/mqtt-logs/${imei}">📜 MQTT Logs</a>
+                <div class="btn time">⏱ MQTT</div>
+            </div>
+        </div>`;
+    });
+}
+
+async function saveMapping(){
+    document.querySelectorAll("input[data-imei]").forEach(i=>{
+        if(i.value.trim()){
+            CURRENT_MAP[i.dataset.imei]=i.value.trim();
+        }
+    });
+
+    await fetch("/api/mqtt-portal",{
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
+        body:JSON.stringify(CURRENT_MAP)
+    });
+
+    loadPortal();
+}
+
+loadPortal();
+</script>
+
+</body>
+</html>
